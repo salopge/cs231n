@@ -233,47 +233,46 @@ dropout이 처음 소개된 이후로 실제 적용 사례에서 나타난 성�
 
 <a name='losses'></a>
 
-### Loss functions
+### 손실 함수
 
-We have discussed the regularization loss part of the objective, which can be seen as penalizing some measure of complexity of the model. The second part of an objective is the *data loss*, which in a supervised learning problem measures the compatibility between a prediction (e.g. the class scores in classification) and the ground truth label. The data loss takes the form of an average over the data losses for every individual example. That is, $L = \frac{1}{N} \sum_i L_i$ where $N$ is the number of training data. Lets abbreviate $f = f(x_i; W)$ to be the activations of the output layer in a Neural Network. There are several types of problems you might want to solve in practice:
+We have discussed the regularization loss part of the objective, which can be seen as penalizing some measure of complexity of the model. 다음으로 이야기할 부분은 supervised learning에서 참값과 예측값 사이의 호환성을 측정하는 *데이터 손실*에 관한 것이다. 데이터 손실은 개별 데이터의 손실에 평균을 취하는 형태로 표현할 수 있다. 즉, $L = \frac{1}{N} \sum_i L_i$ 수식으로 표현 가능하다.(여기서 $N$은 트레이닝 데이터의 갯수이다) 신경망 출력 레이어의 activation 함수를 $f = f(x_i; W)$ 표현하자. 이때 실제 구현에 있어서 다음의 몇가지 문제를 고려할 필요가 있다.
 
-**Classification** is the case that we have so far discussed at length. Here, we assume a dataset of examples and a single correct label (out of a fixed set) for each example. One of two most commonly seen cost functions in this setting are the SVM (e.g. the Weston Watkins formulation):
+**분류(Classification)**은 지금까지 계속 다루어 왔던 사례이다. 각 데이터 샘플 마다 참인 하나의 레이블을 갖고 있다고 가정하자. cost 함수로 가장 많이 사용되는 2가지 함수 중 하나는 SVM(혹은 the Weston Watkins formulation)이다:
 
 $$
 L_i = \sum_{j\neq y_i} \max(0, f_j - f_{y_i} + 1)
 $$
 
-As we briefly alluded to, some people report better performance with the squared hinge loss (i.e. instead using $\max(0, f_j - f_{y_i} + 1)^2$). The second common choice is the Softmax classifier that uses the cross-entropy loss:
+ $\max(0, f_j - f_{y_i} + 1)^2$ 대신 hinge loss를 사용하면 더 좋은 성능을 얻을 수 있다고 주장하는 연구들도 종종 보고되곤 한다. 많이 사용되는 또 다른 cost function은 cross-entropy 손실을 사용하는 Softmax classifier이다:
 
 $$
 L_i = -\log\left(\frac{e^{f_{y_i}}}{ \sum_j e^{f_j} }\right)
 $$
 
-**Problem: Large number of classes**. When the set of labels is very large (e.g. words in English dictionary, or ImageNet which contains 22,000 categories), it may be helpful to use *Hierarchical Softmax* (see one explanation [here](http://arxiv.org/pdf/1310.4546.pdf) (pdf)). The hierarchical softmax decomposes labels into a tree. Each label is then represented as a path along the tree, and a Softmax classifier is trained at every node of the tree to disambiguate between the left and right branch. The structure of the tree strongly impacts the performance and is generally problem-dependent.
+**문제: 너무 많은 클래스 갯수**. 분류 가능한 레이블의 숫자가 너무 많은 경우 (예를들어, 영어 사전의 단어들, 2200개의 카테고리를 갖는 ImageNet 데이터), *계층적(Hierarchial) Softmax*를 사용하는 것이 도움이 될 수 있다. ([here](http://arxiv.org/pdf/1310.4546.pdf) (pdf) 문서의 설명 참조) 계층적 softmax는 각 레이블을 트리 구조로 분해한다. 각 레이블은 트리 구조내에서 하나의 path로 표현되며 하나의 트리 노드에서 왼쪽, 오른쪽 브랜치의 차이를 나타내기 위해 트리의 모든 노드에 대해서 학습된다. 트리 구조 자체가 전체 성능에 강한 영향을 주는 요소이며 문제 상황에 따라서 다양한 형태의 구조를 갖는다.
 
-**Attribute classification**. Both losses above assume that there is a single correct answer $y_i$. But what if $y_i$ is a binary vector where every example may or may not have a certain attribute, and where the attributes are not exclusive? For example, images on Instagram can be thought of as labeled with a certain subset of hashtags from a large set of all hashtags, and an image may contain multiple. A sensible approach in this case is to build a binary classifier for every single attribute independently. For example, a binary classifier for each category independently would take the form:
-
+**속성 분류기**. 위에서 이야기 했던 2가지 loss 모두 하나의 정답 $y_i$를 갖는다고 가정한다. 하지만 $y_i$가 여러개의 속성 각각에 대해서 해당 속성을 갖는지를 표현하는 이항 벡터이며 1개 이상의 속성을 동시에 갖는 경우라면 어떻게 봐야 할까? 예를 들어 인스타그램에서 각 이미지들은 모든 해쉬태그의 큰 집합의  부분 집합으로 이루어진 1개 이상의 해쉬태그를 갖는 경우로 생각할 수 있을 것이다. 각각의 속성을 독립적으로 정의하는 이항 분류기를 정의하는 것이 보편적인 접근 방법일 것이다. 예를들어, 각 속성을 독립적으로 정의하는 이상 분류기는 다음의 형태로 표현될 수 있을것이다:
 $$
 L_i = \sum_j \max(0, 1 - y_{ij} f_j)
 $$
 
-where the sum is over all categories $j$, and $y_{ij}$ is either +1 or -1 depending on whether the i-th example is labeled with the j-th attribute, and the score vector $f_j$ will be positive when the class is predicted to be present and negative otherwise. Notice that loss is accumulated if a positive example has score less than +1, or when a negative example has score greater than -1.
+이 식에서 모든 카테고리 $j$에 대해서 시그마 연산을 수행하고, $y_{i}$는 i번째 데이터가 j 번째 속성을 갖는지 여부에 따라서 +1 또는 -1의 값을 갖는다. 점수 벡터(score vector) $f_j$는 해당 클래스에 속하는 것으로 예측되면 양의 값을 그렇지 않으면 음의 값을 갖는다. 클래스에 속하는 데이터가 +1보다 작은 점수(score)를 갖거나 클래스에 속하지 않는 데이터가 -1보다 큰 점수를 갖는 경우 위의 수식에서 값이 계속 누적된다는 사실에 주목할 필요가 있다.
 
-An alternative to this loss would be to train a logistic regression classifier for every attribute independently. A binary logistic regression classifier has only two classes (0,1), and calculates the probability of class 1 as:
+위의 손실 대신에 logistic regreaion 분류기를 사용하여 각 속성에 대해서 독립적으로 학습 시킬 수도 있다. 이항 logistic regression 분류기는 (0, 1) 두가지 값중 하나를 갖고, 클래스1에 속할 확률은 다음과 같이 계산할 수 있다:
 
 $$
 P(y = 1 \mid x; w, b) = \frac{1}{1 + e^{-(w^Tx +b)}} = \sigma (w^Tx + b)
 $$
 
-Since the probabilities of class 1 and 0 sum to one, the probability for class 0 is $P(y = 0 \mid x; w, b) = 1 - P(y = 1 \mid x; w,b)$. Hence, an example is classified as a positive example (y = 1) if $\sigma (w^Tx + b) > 0.5$, or equivalently if the score $w^Tx +b > 0$. The loss function then maximizes the log likelihood of this probability. You can convince yourself that this simplifies to:
+클래스 0, 1에 속할 확률의 합은 항상 1이므로, 클래스 0에 속할 확률은 $P(y = 0 \mid x; w, b) = 1 - P(y = 1 \mid x; w,b)$ 표현 가능하다. 따라서 $\sigma (w^Tx + b) > 0.5$ 이거나 혹은 $w^Tx +b > 0$ 을 만족하면 클래스 1로 분류된다고 말할 수 있다. 다음과 같은 수식으로 단순화 할 수 있다:
 
 $$
 L_i = \sum_j y_{ij} \log(\sigma(f_j)) + (1 - y_{ij}) \log(1 - \sigma(f_j))
 $$
 
-where the labels $y_{ij}$ are assumed to be either 1 (positive) or 0 (negative), and $\sigma(\cdot)$ is the sigmoid function. The expression above can look scary but the gradient on $f$ is in fact extremely simple and intuitive: $\partial{L_i} / \partial{f_j} = y_{ij} - \sigma(f_j)$ (as you can double check yourself by taking the derivatives).
+레이블 $y_{ij}$는 1 또는 0의 레이블을 갖고 $\sigma(\cdot)$ sigmoid 함수이다. 위의 수식이 복잡해 보일 수도 있지만 $f$에 대한 그래디언트는 아주 간단하고 또한 직관적이다: $\partial{L_i} / \partial{f_j} = y_{ij} - \sigma(f_j)$ (f에 대한 미분을 직접 유도하여 확인해 볼 수 있다)
 
-**Regression** is the task of predicting real-valued quantities, such as the price of houses or the length of something in an image. For this task, it is common to compute the loss between the predicted quantity and the true answer and then measure the L2 squared norm, or L1 norm of the difference. The L2 norm squared would compute the loss for a single example of the form:
+**Regression**은 집 가격 혹은 이미지에서 어떤 물체의 길이 등과 같이 실수값(real value)을 예측하는 작업이다. Regression은 실제 참 값과 예측 값 간의 loss를 계산하며 L2 제곱 norm 혹은 L1 norm을 사용하는 것이 일반적이다. 하나의 데이터 샘플에서 L2 제곱 norm을 계산하는 식은 다음과 같다:
 
 $$
 L_i = \Vert f - y_i \Vert_2^2
